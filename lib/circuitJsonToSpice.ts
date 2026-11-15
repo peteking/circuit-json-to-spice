@@ -57,6 +57,11 @@ export function circuitJsonToSpice(
   const simulationSpiceSubcircuits = circuitJson.filter(
     (elm) => elm.type === "simulation_spice_subcircuit",
   ) as SimulationSpiceSubcircuit[]
+  // A component with a <spicemodel> is simulated by that subcircuit alone, so
+  // its built-in element (e.g. a default diode) must not be emitted as well.
+  const componentIdsWithSpiceSubcircuit = new Set(
+    simulationSpiceSubcircuits.map((s) => s.source_component_id),
+  )
   const simulationSwitchMap = new Map<string, SimulationSwitch>()
 
   for (const simSwitch of simulationSwitches) {
@@ -220,6 +225,8 @@ export function circuitJsonToSpice(
   // Process each component
   for (const component of sourceComponents) {
     if (component.type !== "source_component") continue
+    if (componentIdsWithSpiceSubcircuit.has(component.source_component_id))
+      continue
 
     const componentPorts = su(circuitJson)
       .source_port.list({
